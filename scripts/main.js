@@ -159,4 +159,4 @@ class Application {
     }
 }
 
-new Application();
+// new Application();

@@ -52,4 +52,4 @@ class Controller {
     }
 }
 
-const controller = new Controller();
+new Controller();

@@ -43,6 +43,76 @@
 
     <canvas id="canvas"></canvas>
 
+    <script>
+
+        /**
+         * 可以理解为求圆边到中心点的距离
+         *
+         * 1、邻边(x) = sin(弧度) * r
+         * 2、对边(y) = cos(弧度) * r
+         *
+         * @param {number} longRadio - 长半径
+         * @param {number} shortRadio - 短半径
+         * @param {number} gap - 节点的间隔
+         * @param {number} cx - 圆心
+         * @param {number} cy - 圆心
+         */
+        function generateEllipse({ longRadio, shortRadio, gap = 1, cx = 0, cy = 0 }) {
+            const data = [];
+            for (let index = 0; index < 360; index = index + gap) {
+                const radian = index * (Math.PI / 180); // 角度转弧度
+                // x = a + sin(rad) * r
+                const x = cx + Math.cos(radian) * longRadio;
+                // y = b + cos(rad) * r
+                const y = cy + Math.sin(radian) * shortRadio;
+                data.push({ x, y });
+            }
+            return data;
+        }
+
+        /**
+         * xy: 原本位置
+         * XY: 转换后的位置
+         * radian: 旋转的弧度，由角度转换而来
+         * X(旋转后) = x * cos(radian) - y * sin(radian)
+         * Y(旋转后) = x * sin(radian) + y * cos(radian)
+         *
+         * @param rotateAngle - 旋转角度
+         * @param {{x:number,y:number}[]} ellipseVec - 椭圆矩阵集合
+         */
+        function rotateEllipse(rotateAngle, ellipseVec) {
+            const radian = rotateAngle * (Math.PI / 180);
+            for (let i = 0; i < ellipseVec.length; i++) {
+                const point = ellipseVec[i];
+                const { x: rawX, y: rawY } = point;
+                point.x = rawX * Math.cos(radian) - rawY * Math.sin(radian);
+                point.y = rawX * Math.sin(radian) + rawY * Math.cos(radian);
+            }
+        }
+
+        async function render() {
+            const canvas = document.getElementById("canvas");
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            /** @type {CanvasRenderingContext2D} */
+            const ctx = canvas.getContext("2d");
+
+            const data = generateEllipse({ longRadio: 200, shortRadio: 100 });
+            rotateEllipse(30, data);
+
+            ctx.fillStyle = "white";
+            for (let i = 0; i < 360; i++) {
+                ctx.beginPath();
+                ctx.arc(data[i].x + 300, data[i].y + 300, 1, 0, Math.PI * 2);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        render();
+
+    </script>
+
     <script src="scripts/sound.js"></script>
     <script src="scripts/store.js"></script>
     <script src="scripts/main.js"></script>
