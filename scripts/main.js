@@ -1,57 +1,124 @@
+/** @interface */
+class ParticleEffect {
+    update() {}
+}
 
+/** @interface */
 class Particle {
+    x = 0;
+    y = 0;
+    vx = 0;
+    vy = 0;
+    age = 0
+}
+
+/**
+ * @interface
+ */
+class FireworkOptions {
+    width = 0;
+    height = 0;
+    /** @type {CanvasRenderingContext2D} */
+    ctx = null;
+    cb = null;
+    /** @class */
+    effectClassName;
+}
+
+/**
+ * 矩形粒子效果
+ * @implements {ParticleEffect}
+ */
+class RectangleParticle {
+
+    /** @type {Array<Particle>} */
+    particles = [];
+
     /**
      * @param {number} x
      * @param {number} y
      * @param {string} color
+     * @param {CanvasRenderingContext2D} ctx
+     * @param cb
      */
-    constructor(x, y, color) {
-        this.x = x;
-        this.y = y;
-        this.color = color;
+    constructor(x, y, color, ctx, cb) {
 
-        // 随机生成粒子炸开的方向
-        this.vx = (0.5 - Math.random()) * 100;  // 左右
-        this.vy = (0.5 - Math.random()) * 100;  // 上下
-        // 随机生成粒子有效期，来判断每个粒子何时熄灭
-        this.age = Math.random() * 100 | 0;
+        this.color = color;
+        this.ctx = ctx;
+        this.cb = cb;
+
+        // 生成粒子
+        for (let i = 0; i < 100; i++) {
+            this.particles.push({
+                x,
+                y,
+                vx: (0.5 - Math.random()) * 100,    // 左右
+                vy: (0.5 - Math.random()) * 100,    // 上下
+                age: Math.random() * 100 | 0
+            });
+        }
     }
 
     /**
-     * @param {CanvasRenderingContext2D} ctx
+     * @private
+     * @param {Particle} particle
      */
-    draw(ctx) {
-        ctx.globalAlpha = 1;
-        ctx.beginPath();
-        ctx.fillStyle = this.color;
-        ctx.arc(this.x, this.y, 1, 0, Math.PI * 2);
-        ctx.fill();
+    draw(particle) {
+        this.ctx.globalAlpha = 1;
+        this.ctx.beginPath();
+        this.ctx.fillStyle = this.color;
+        this.ctx.arc(particle.x, particle.y, 1, 0, Math.PI * 2);
+        this.ctx.fill();
     }
 
     update() {
-        this.x += this.vx / 20;
-        this.y += this.vy / 20;
-        // 同时改变粒子的垂直方向的值，确保粒子会向下运动
-        this.vy++;
-        this.age--;
+        this.particles = this.particles.filter(particle => {
+
+            particle.x += particle.vx / 20;
+            particle.y += particle.vy / 20;
+            // 同时改变粒子的垂直方向的值，确保粒子会向下运动
+            particle.vy++;
+            particle.age--;
+
+            this.draw(particle);
+
+            return particle.age >= 0;
+        });
+
+        if (this.particles.length <= 0) {
+            this.cb?.();
+        }
+    }
+}
+
+/**
+ * 椭圆粒子效果
+ * @implements {ParticleEffect}
+ */
+class EllipseParticle {
+    draw() {
+
+    }
+
+    update() {
+
     }
 }
 
 class Fireworks {
 
+    isBurst = false;
+
     /**
-     * @param {number} width
-     * @param {number} height
-     * @param {CanvasRenderingContext2D} ctx
-     * @param cb
+     * @param {FireworkOptions} options
      */
-    constructor(width, height, ctx, cb) {
-        this.ctx = ctx;
-        this.particles = [];
-        this.canvasWidth = width;
-        this.canvasHeight = height;
-        this.cb = cb;
-        this.isBoom = false;
+    constructor(options) {
+        this.ctx = options.ctx;
+        this.canvasWidth = options.width;
+        this.canvasHeight = options.height;
+        this.cb = options.cb;
+        this.effectClassName = options.effectClassName;
+
         this.init();
     }
 
@@ -62,22 +129,28 @@ class Fireworks {
         this.gravity = -(Math.random() * Math.sqrt(this.canvasHeight) / 3 + Math.sqrt(4 * this.canvasHeight) / 2) / 5;
     }
 
+    /**
+     * 每一帧更新前都会调用这个函数
+     */
     update() {
-        if (this.isBoom) {
-            this.boom();
+        if (this.isBurst) {
+            this.effect?.update();
         } else {
             this.y += this.gravity;
             this.gravity += 0.04;
             if (this.gravity >= 0) {
-                // 生成粒子数组
-                const particleNumber = Math.random() * this.canvasWidth / 3 | 0;
-                for (let i = 0; i < particleNumber; i++) {
-                    this.particles.push(new Particle(this.x, this.y, this.color));
-                }
-                this.isBoom = true;
+
+                this.effect = new this.effectClassName(
+                    this.x,
+                    this.y,
+                    this.color,
+                    this.ctx,
+                    this.notify.bind(this),
+                );
+
+                this.isBurst = true;
                 SoundManager.burst?.play();
             }
-
             this.draw();
         }
     }
@@ -86,69 +159,42 @@ class Fireworks {
         this.ctx.globalAlpha = 1;
         this.ctx.beginPath();
         this.ctx.fillStyle = this.color;
-        this.ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+        this.ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
         this.ctx.fill();
     }
 
-    boom() {
-
-        this.particles = this.particles.filter(item => {
-            item.update();
-            item.draw(this.ctx);
-            return item.age > 0;
-        });
-
-        if (this.particles.length === 0) {
-            this.notify();
-        }
-    }
-
     notify() {
+        this.effect = null;
         this.cb?.(this);
     }
 
 }
 
 class Application {
+
     constructor() {
         this.canvas = document.getElementById("canvas");
         this.canvas.width = window.innerWidth;
         this.canvas.height = window.innerHeight;
         this.ctx = this.canvas.getContext("2d");
         this.fireworks = [];
+
         this.init();
         this.run();
     }
 
     init() {
-        this.fireworks.push(new Fireworks(
-            this.canvas.width,
-            this.canvas.height,
-            this.ctx,
-            this.removeFirework.bind(this)
-        ));
+        this.fireworks.push(this.createFirework());
     }
 
-    run() {
-        this.ctx.globalAlpha = 0.1;
-        this.ctx.fillStyle = 'black';
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-        requestAnimationFrame(() => this.run());
-
-        for (const firework of this.fireworks) {
-            firework.update();
-        }
-
-        if (Math.random() < 0.03) {
-            this.fireworks.push(new Fireworks(
-                this.canvas.width,
-                this.canvas.height,
-                this.ctx,
-                this.removeFirework.bind(this)
-            ));
-            SoundManager.lift?.play();
-        }
+    createFirework() {
+        return new Fireworks({
+            width: this.canvas.width,
+            height: this.canvas.height,
+            ctx: this.ctx,
+            cb: this.removeFirework.bind(this),
+            effectClassName: RectangleParticle
+        });
     }
 
     removeFirework(firework) {
@@ -157,6 +203,30 @@ class Application {
             this.fireworks.splice(index, 1);
         }
     }
+
+    fillMask() {
+        this.ctx.globalAlpha = 0.1;
+        this.ctx.fillStyle = 'black';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+
+    updateFirework() {
+        for (const firework of this.fireworks) {
+            firework.update();
+        }
+
+        if (Math.random() < 0.03) {
+            this.fireworks.push(this.createFirework());
+            SoundManager.lift?.play();
+        }
+    }
+
+    run() {
+        this.fillMask();
+        this.updateFirework();
+        requestAnimationFrame(() => this.run());
+    }
+
 }
 
 // new Application();
