@@ -57,27 +57,7 @@
         const color = `hsl(${Math.random() * 360 | 0}, 100%, 60%)`;
 
         async function render() {
-            const data = generateEllipse({ longRadio: 200, shortRadio: 100, gap: 18 });
-            rotateEllipse(45, data);
-            data.forEach(ellipse => {
-
-                ctx.globalAlpha = 0.1;
-                ctx.fillStyle = 'black';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                const edgeX = ellipse.x + 400;
-                const edgeY = ellipse.y + 400;
-                const points = lineToPoints({ x: 400, y: 400 }, { x: edgeX, y: edgeY });
-                animate(points, 0);
-            });
-        }
-
-        function animate(data, j) {
-
-            if (j < data.length) {
-                drawPoint(data[j].x, data[j].y);
-                requestAnimationFrame(() => animate(data, ++j));
-            }
+            // TODO
         }
 
         function drawLine(x1, y1, x2, y2) {
