@@ -44,20 +44,27 @@
     <canvas id="canvas"></canvas>
 
     <script src="./scripts/lib.js"></script>
+    <script src="scripts/sound.js"></script>
+    <script src="scripts/store.js"></script>
+    <script src="scripts/main.js"></script>
+
     <script>
 
         const canvas = document.getElementById("canvas");
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         const ctx = canvas.getContext("2d");
+        const color = `hsl(${Math.random() * 360 | 0}, 100%, 60%)`;
 
         async function render() {
-
-            // const points = lineToPoints({ x: 400, y: 400 }, { x: 500, y: 400 });
-            // points.forEach(i => drawPoint(i.x, i.y));
-
-            const data = generateEllipse({ longRadio: 200, shortRadio: 100, gap: 30 });
+            const data = generateEllipse({ longRadio: 200, shortRadio: 100, gap: 18 });
+            rotateEllipse(45, data);
             data.forEach(ellipse => {
+
+                ctx.globalAlpha = 0.1;
+                ctx.fillStyle = 'black';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
                 const edgeX = ellipse.x + 400;
                 const edgeY = ellipse.y + 400;
                 const points = lineToPoints({ x: 400, y: 400 }, { x: edgeX, y: edgeY });
@@ -66,6 +73,7 @@
         }
 
         function animate(data, j) {
+
             if (j < data.length) {
                 drawPoint(data[j].x, data[j].y);
                 requestAnimationFrame(() => animate(data, ++j));
@@ -82,27 +90,18 @@
         }
 
         function drawPoint(x, y) {
-
-            ctx.globalAlpha = 0.1;
-            ctx.fillStyle = 'black';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            // ctx.fill();
-
             ctx.globalAlpha = 1;
-            ctx.fillStyle = 'white';
+            ctx.fillStyle = color;
             ctx.beginPath();
             ctx.arc(x, y, 2, 0, Math.PI * 2);
             ctx.closePath();
             ctx.fill();
         }
 
-        render();
+        // render();
+        new Application();
 
     </script>
-
-    <script src="scripts/sound.js"></script>
-    <script src="scripts/store.js"></script>
-    <script src="scripts/main.js"></script>
 
 </body>
 </html>

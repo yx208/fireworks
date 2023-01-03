@@ -96,12 +96,55 @@ class RectangleParticle {
  * @implements {ParticleEffect}
  */
 class EllipseParticle {
-    draw() {
 
+    /**
+     * @param {number} x
+     * @param {number} y
+     * @param {string} color
+     * @param {CanvasRenderingContext2D} ctx
+     * @param cb
+     */
+    constructor(x, y, color, ctx, cb) {
+        this.color = color;
+        this.ctx = ctx;
+        this.cb = cb;
+        this.x = x;
+        this.y = y;
+        this.particles = [];
+
+        // 生成一个斜椭圆
+        const ellipses = generateEllipse({ longRadio: 200, shortRadio: 100, gap: 18 });
+        rotateEllipse(45, ellipses);
+        // 遍历椭圆每个点，得到一个直线
+        const duration = 1000;
+        for (let i = 0; i < ellipses.length; i++) {
+            this.particles.push(lineToPoints(
+                {x, y},
+                {x: ellipses[i].x + x, y: ellipses[i].y + y },
+                duration
+            ));
+        }
+
+        this.age = duration;
+        this.current = 0;
+    }
+
+    draw(particle) {
+        this.ctx.globalAlpha = 1;
+        this.ctx.beginPath();
+        this.ctx.fillStyle = this.color;
+        this.ctx.arc(particle.x, particle.y, 2, 0, Math.PI * 2);
+        this.ctx.fill();
     }
 
     update() {
-
+        if (this.current < this.age) {
+            for (let i = 0; i < this.particles.length; i++) {
+                this.draw(this.particles[i][this.current++]);
+            }
+        } else {
+            this.cb?.();
+        }
     }
 }
 
@@ -193,7 +236,7 @@ class Application {
             height: this.canvas.height,
             ctx: this.ctx,
             cb: this.removeFirework.bind(this),
-            effectClassName: RectangleParticle
+            effectClassName: Math.random() > 0.5 ? EllipseParticle : RectangleParticle
         });
     }
 
@@ -215,7 +258,7 @@ class Application {
             firework.update();
         }
 
-        if (Math.random() < 0.03) {
+        if (Math.random() < 0.01) {
             this.fireworks.push(this.createFirework());
             SoundManager.lift?.play();
         }
@@ -228,5 +271,3 @@ class Application {
     }
 
 }
-
-// new Application();
